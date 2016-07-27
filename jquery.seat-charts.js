@@ -194,7 +194,7 @@
 									//spacebar will just trigger the same event mouse click does
 									case 32:
 										e.preventDefault();
-										seat.click();
+										//seat.click();
 										break;
 									//UP & DOWN
 									case 40:
