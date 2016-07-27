@@ -26,6 +26,9 @@
 		const SEATSIZE = 50;
 		const SEATCOLOR = 0x0f4094;
 		const SEATFLOAT = 10;
+		const TABLE_HEIGHT = (SEATSIZE * 1.4);
+		const TABLE_LENGTH = (SEATSIZE * 4.5);
+		const TABLE_WIDTH = (SEATSIZE * 1.5); 
 		var seatCounter = 0;
 		var cube;
 		
@@ -78,6 +81,19 @@
 			
 		}
 	}
+	var Table = class Table {
+		// wrapper for name
+		constructor(xpos,zpos) {
+			var tableGeometry = new THREE.CubeGeometry(TABLE_LENGTH, TABLE_HEIGHT, TABLE_WIDTH, 1, 1, 1 );
+			var tableMaterial = getTableMaterial();
+			//this.name = "seat"+seatCounter;
+			//var namestring = "seat"+seatCounter; 
+			this.table = new THREE.Mesh(tableGeometry, tableMaterial);
+			this.table.position.set(xpos, ((TABLE_HEIGHT / 2)), zpos);
+			scene.add(this.table);
+			this.status = 0;
+		}
+	}
 
 	// initialization
 	init();
@@ -108,7 +124,7 @@
 		scene.add(camera);
 		// the camera defaults to position (0,0,0)
 		// 	so pull it back (z = 400) and up (y = 100) and set the angle towards the scene origin
-		camera.position.set(0,250,400);
+		camera.position.set(200,450,-400);
 		camera.lookAt(scene.position);	
 		
 		//////////////
@@ -186,13 +202,47 @@
 		//cube = new THREE.Mesh( cubeGeometry, cubeMaterials );
 		cube = new THREE.Mesh(cubeGeometry, blackCubeMaterials);
 		cube.position.set(-100, 35, -50);
-		scene.add( cube );	
+		//scene.add( cube );	
 
 		var seatName = "Testing"; 
-		this[seatName] = new Seat(-100,150,100);
-		makeNewSeat(50,500);
-		makeNewSeat(50,450);
+		//this[seatName] = new Seat(-100,150,100);
 		
+		var table1 = new Table(TABLE_LENGTH*-0.5,TABLE_LENGTH*0.5+(TABLE_WIDTH/2));
+		var table2 = new Table(TABLE_LENGTH*0.5,TABLE_LENGTH*0.5+(TABLE_WIDTH/2));
+		var table3 = new Table(TABLE_LENGTH-(TABLE_WIDTH/2), 0);
+		table3.table.rotateY(Math.PI/2);
+		var table4 = new Table(TABLE_LENGTH*0.5, TABLE_LENGTH*-0.5-(TABLE_WIDTH/2));
+		var table5 = new Table(TABLE_LENGTH*-0.5, TABLE_LENGTH*-0.5-(TABLE_WIDTH/2));
+		
+
+		// SEATS - outside tables  
+		// - table 1 - 
+		makeNewSeat(TABLE_LENGTH*-0.5+SEATSIZE, TABLE_LENGTH*0.5+(TABLE_WIDTH/2)+((TABLE_WIDTH+SEATSIZE)/2)+SEATSIZE/3);
+		makeNewSeat(TABLE_LENGTH*-0.5-SEATSIZE, TABLE_LENGTH*0.5+(TABLE_WIDTH/2)+((TABLE_WIDTH+SEATSIZE)/2)+SEATSIZE/3);
+		// - table 2 - 
+		makeNewSeat(TABLE_LENGTH*0.5-SEATSIZE, TABLE_LENGTH*0.5+(TABLE_WIDTH/2)+((TABLE_WIDTH+SEATSIZE)/2)+SEATSIZE/3)
+		makeNewSeat(TABLE_LENGTH*0.5+SEATSIZE, TABLE_LENGTH*0.5+(TABLE_WIDTH/2)+((TABLE_WIDTH+SEATSIZE)/2)+SEATSIZE/3)
+		// - table 3 - 
+		makeNewSeat(TABLE_LENGTH + SEATSIZE/2 + SEATSIZE/3, TABLE_LENGTH*0.5-SEATSIZE);
+		makeNewSeat(TABLE_LENGTH + SEATSIZE/2 + SEATSIZE/3, TABLE_LENGTH*-0.5+SEATSIZE);
+		// - table 4 - 
+		makeNewSeat(TABLE_LENGTH*0.5+SEATSIZE, TABLE_LENGTH*-0.5-(TABLE_WIDTH/2)-((TABLE_WIDTH+SEATSIZE)/2)-SEATSIZE/3);
+		makeNewSeat(TABLE_LENGTH*0.5-SEATSIZE, TABLE_LENGTH*-0.5-(TABLE_WIDTH/2)-((TABLE_WIDTH+SEATSIZE)/2)-SEATSIZE/3);
+		// - table 5 - 
+		makeNewSeat(TABLE_LENGTH*-0.5+SEATSIZE, TABLE_LENGTH*-0.5-(TABLE_WIDTH/2)-((TABLE_WIDTH+SEATSIZE)/2)-SEATSIZE/3);
+		makeNewSeat(TABLE_LENGTH*-0.5-SEATSIZE, TABLE_LENGTH*-0.5-(TABLE_WIDTH/2)-((TABLE_WIDTH+SEATSIZE)/2)-SEATSIZE/3);
+		
+		// SEATS - inside tables 
+		// - table 1 - 
+		makeNewSeat(TABLE_LENGTH*-0.5+SEATSIZE/2, TABLE_LENGTH*0.5+(TABLE_WIDTH/2)-((TABLE_WIDTH+SEATSIZE)/2)-SEATSIZE/3);
+		// - table 2 - 
+		makeNewSeat(TABLE_LENGTH*0.5-SEATSIZE/2, TABLE_LENGTH*0.5+(TABLE_WIDTH/2)-((TABLE_WIDTH+SEATSIZE)/2)-SEATSIZE/3);
+		// - table 3 - 
+		makeNewSeat(TABLE_LENGTH-(TABLE_WIDTH/2)-TABLE_WIDTH/2-SEATSIZE/2-SEATSIZE/3, 0);
+		// - table 4 - 
+		makeNewSeat(TABLE_LENGTH*0.5-SEATSIZE/2, TABLE_LENGTH*-0.5-(TABLE_WIDTH/2)+((TABLE_WIDTH+SEATSIZE)/2)+SEATSIZE/3);
+		// - table 5 - 
+		makeNewSeat(TABLE_LENGTH*-0.5+SEATSIZE/2, TABLE_LENGTH*-0.5-(TABLE_WIDTH/2)+((TABLE_WIDTH+SEATSIZE)/2)+SEATSIZE/3);
 
 		// 0 for open, 1 for taken
 		// cube.status = 0;
@@ -217,13 +267,6 @@
 		// second = new THREE.Mesh(cubeGeometry, darkTranslucentMaterial);
 		// second.position.set(-100, 25, -100);
 		// scene.add( second );
-
-		// trying to add a back: 
-		// var backGeometry = new THREE.CubeGeometry(50,10,100, 1, 1, 1);
-		// var backMaterials = blackCubeMaterials;
-		// back = new THREE.Mesh(backGeometry, backMaterials);
-		// back.position.set(-100, 75, -50);
-		// scene.add(back);
 		
 		///////////
 		// FLOOR //
@@ -281,7 +324,10 @@
 		renderer.render( scene, camera );
 	}
 	function getSeatMaterial() {
-		return (new THREE.MeshPhongMaterial( { color: 0x333333, transparent: true, opacity: 0.75 } ));
+		return (new THREE.MeshLambertMaterial( { color: 0x333333, transparent: true, opacity: 0.75 } ));
+	}
+	function getTableMaterial() {
+		return (new THREE.MeshLambertMaterial( { color: 0x889922, transparent: true, opacity: 0.75 } ));
 	}
 	function solidColorArray(colorChoice)
 	{
