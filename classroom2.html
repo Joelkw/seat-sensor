@@ -24,13 +24,22 @@
 
 		/* CONSTANTS */ 
 		const SEATSIZE = 50;
-		const SEATCOLOR = 0x0f4094;
-		const SEATFLOAT = 10;
+		const SEATFLOAT = 20;
 		const TABLE_HEIGHT = (SEATSIZE * 1.4);
 		const TABLE_LENGTH = (SEATSIZE * 4.5);
 		const TABLE_WIDTH = (SEATSIZE * 1.5); 
+		const SPOTLIGHT_HEIGHT = 1950;
+		const LIGHT_HEIGHT = 350; 
+		const LIGHT_COLOR = 0x404040;
+		const LIGHT_FACTOR = 0.7;
+		// colors
+		const SEAT_COLOR = 0x08F1C4;
+		const SEAT_OFF_COLOR = 0x8E3BA5;
+		const TABLE_COLOR = 0x404241;
 		var seatCounter = 0;
 		var cube;
+		var sitSound = new sound("sitSound.mp3");
+		var standSound = new sound("standSound.mp3");
 		
 		/*
 	Three.js "tutorials by example"
@@ -51,11 +60,15 @@
 	var Seat = class Seat {
 		// wrapper for name
 		constructor(xpos,ypos,zpos) {
-			var seatGeometry = new THREE.CubeGeometry(SEATSIZE, SEATSIZE, SEATSIZE, 1, 1, 1 );
+			//var seatGeometry = new THREE.CubeGeometry(SEATSIZE, SEATSIZE, SEATSIZE, 1, 1, 1 );
+			var seatGeometry = new THREE.CylinderGeometry(SEATSIZE/2, SEATSIZE/2, SEATSIZE, 80 );
+			// var modifier = new THREE.SubdivisionModifier( 2 );
+			// modifier.modify(seatGeometry);
 			var seatMaterial = getSeatMaterial();
 			//this.name = "seat"+seatCounter;
 			//var namestring = "seat"+seatCounter; 
 			this.seat = new THREE.Mesh(seatGeometry, seatMaterial);
+			this.seat.castShadow = true;
 			this.seat.position.set(xpos, ((SEATSIZE / 2) + SEATFLOAT), zpos);
 			scene.add(this.seat);
 			this.status = 0;
@@ -67,16 +80,20 @@
 		}
 
 		change() {
+			// someone takes the seat
 			if (this.status == 0) {
-				this.seat.material = new THREE.MeshPhongMaterial( { color: SEATCOLOR, transparent: true, opacity: 0.75 });
+				this.seat.material = new THREE.MeshPhongMaterial( { color: SEAT_OFF_COLOR, transparent: true, opacity: 0.65 });
 				this.seat.position.y = this.seat.position.y - SEATFLOAT;
 				this.status = 1;
+				sitSound.play();
 			}
-			else
+			// seat is available again
+			else 
 			{
-				this.seat.material = new THREE.MeshPhongMaterial( { color: SEATCOLOR, transparent: false, opacity: 0.99 });
+				this.seat.material = new THREE.MeshPhongMaterial( { color: SEAT_COLOR, transparent: false, opacity: 0.8 });
 				this.seat.position.y = this.seat.position.y + SEATFLOAT;
 				this.status = 0;
+				standSound.play();
 			}
 			
 		}
@@ -89,9 +106,37 @@
 			//this.name = "seat"+seatCounter;
 			//var namestring = "seat"+seatCounter; 
 			this.table = new THREE.Mesh(tableGeometry, tableMaterial);
+			this.table.castShadow = true;
 			this.table.position.set(xpos, ((TABLE_HEIGHT / 2)), zpos);
 			scene.add(this.table);
 			this.status = 0;
+		}
+	}
+	var Spotlight = class Spotlight {
+		constructor(xpos,zpos) {
+			var spotlight = new THREE.SpotLight(0x909090);
+			spotlight.position.set(xpos,SPOTLIGHT_HEIGHT,zpos);
+			spotlight.angle = (Math.PI/2);
+			//spotlight.shadowCameraVisible = true;
+			spotlight.shadowDarkness = 0.25;
+			spotlight.intensity = 0.5;
+			//spotlight.target = (xpos,0,zpos);
+			// must enable shadow casting ability for the light
+			spotlight.castShadow = true;
+			//scene.add(spotlight.target);
+			scene.add(spotlight);
+		}
+	}
+	var Line = class Line {
+		constructor(x1,y1,z1,x2,y2,z2) {
+			var material = new THREE.LineBasicMaterial({
+        color: 0x000000
+	    });
+	    var geometry = new THREE.Geometry();
+	    geometry.vertices.push(new THREE.Vector3(x1,y1,z1));
+	    geometry.vertices.push(new THREE.Vector3(x2,y2,z2));
+	    var line = new THREE.Line(geometry, material);
+	    scene.add(line);
 		}
 	}
 
@@ -124,7 +169,7 @@
 		scene.add(camera);
 		// the camera defaults to position (0,0,0)
 		// 	so pull it back (z = 400) and up (y = 100) and set the angle towards the scene origin
-		camera.position.set(200,450,-400);
+		camera.position.set(350,450,-550);
 		camera.lookAt(scene.position);	
 		
 		//////////////
@@ -138,6 +183,8 @@
 			renderer = new THREE.CanvasRenderer(); 
 		
 		renderer.setSize(SCREEN_WIDTH, SCREEN_HEIGHT);
+
+		renderer.shadowMapEnabled = true;
 		
 		// attach div element to variable to contain the renderer
 		container = document.getElementById( 'ThreeJS' );
@@ -169,11 +216,50 @@
 		///////////
 		
 		// create a light
-		var light = new THREE.PointLight(0xffffff);
-		light.position.set(0,250,0);
+
+		// TODO: FACTOR OUT to Light class/function IF TIME
+		
+
+		var light = new THREE.PointLight(LIGHT_COLOR);
+		light.position.set(0,LIGHT_HEIGHT,0);
 		scene.add(light);
-		var ambientLight = new THREE.AmbientLight(0x111111);
-		// scene.add(ambientLight);
+		light.castShadow = true;
+
+		var ambientLight = new THREE.AmbientLight(0x101010);
+		scene.add(ambientLight);
+		
+		var light2 = new THREE.PointLight(LIGHT_COLOR);
+		light.position.set(TABLE_LENGTH*2,LIGHT_HEIGHT,-TABLE_LENGTH*2);
+		scene.add(light2);
+		light2.castShadow = true;
+
+		var light3 = new THREE.PointLight(LIGHT_COLOR);
+		light3.position.set(-TABLE_LENGTH*2,LIGHT_HEIGHT,-TABLE_LENGTH*2);
+		scene.add(light3);
+		light3.castShadow = true;
+
+		var light4 = new THREE.PointLight(LIGHT_COLOR);
+		light4.position.set(-TABLE_LENGTH*2,LIGHT_HEIGHT,TABLE_LENGTH*2);
+		scene.add(light4);
+		light4.castShadow = true;
+
+		var light5 = new THREE.PointLight(LIGHT_COLOR);
+		light5.position.set(TABLE_LENGTH*2,LIGHT_HEIGHT,TABLE_LENGTH*2);
+		scene.add(light5);
+		light5.castShadow = true;
+
+		light.shadowCameraVisible = true;
+		light2.shadowCameraVisible = true;
+		light3.shadowCameraVisible = true;
+		light4.shadowCameraVisible = true;
+		light5.shadowCameraVisible = true;
+
+		
+		spot1 = new Spotlight(TABLE_LENGTH*LIGHT_FACTOR, TABLE_LENGTH*LIGHT_FACTOR);
+		spot2 = new Spotlight(TABLE_LENGTH*LIGHT_FACTOR, -TABLE_LENGTH*LIGHT_FACTOR);
+		spot3 = new Spotlight(-TABLE_LENGTH*LIGHT_FACTOR, TABLE_LENGTH*LIGHT_FACTOR);
+		spot4 = new Spotlight(-TABLE_LENGTH*LIGHT_FACTOR, -TABLE_LENGTH*LIGHT_FACTOR);
+
 		
 		//////////////
 		// GEOMETRY //
@@ -204,7 +290,7 @@
 		cube.position.set(-100, 35, -50);
 		//scene.add( cube );	
 
-		var seatName = "Testing"; 
+		//var seatName = "Testing"; 
 		//this[seatName] = new Seat(-100,150,100);
 		
 		var table1 = new Table(TABLE_LENGTH*-0.5,TABLE_LENGTH*0.5+(TABLE_WIDTH/2));
@@ -213,7 +299,6 @@
 		table3.table.rotateY(Math.PI/2);
 		var table4 = new Table(TABLE_LENGTH*0.5, TABLE_LENGTH*-0.5-(TABLE_WIDTH/2));
 		var table5 = new Table(TABLE_LENGTH*-0.5, TABLE_LENGTH*-0.5-(TABLE_WIDTH/2));
-		
 
 		// SEATS - outside tables  
 		// - table 1 - 
@@ -244,23 +329,13 @@
 		// - table 5 - 
 		makeNewSeat(TABLE_LENGTH*-0.5+SEATSIZE/2, TABLE_LENGTH*-0.5-(TABLE_WIDTH/2)+((TABLE_WIDTH+SEATSIZE)/2)+SEATSIZE/3);
 
-		// 0 for open, 1 for taken
-		// cube.status = 0;
-
-		// cube.change = function() {
-		// 	if (cube.status == 0) {
-		// 		cube.material = new THREE.MeshPhongMaterial( { color: CUBECOLOR, transparent: true, opacity: 0.75 });
-		// 		cube.position.y = 25
-		// 		cube.status = 1;
-		// 	}
-		// 	else
-		// 	{
-		// 		cube.material = new THREE.MeshPhongMaterial( { color: CUBECOLOR, transparent: false, opacity: 0.99 });
-		// 		cube.position.y = 35;
-		// 		cube.status = 0;
-		// 	}
-			
-		// }
+		// Add TV
+		var tvGeometry = new THREE.CubeGeometry(SEATSIZE/10, SEATSIZE*1.5, SEATSIZE*4, 1, 1, 1 );
+		var tvMaterials = new THREE.MeshLambertMaterial({color: 0x000000});
+		var tv = new THREE.Mesh(tvGeometry, tvMaterials);
+		tv.position.set(-TABLE_LENGTH*1.5, SEATSIZE*2.5, 0);
+		tv.castShadow = true;
+		scene.add(tv);	
 
 
 		// var darkTranslucentMaterial = new THREE.MeshPhongMaterial( { color: 0x333333, transparent: true, opacity: 0.75 } );
@@ -273,16 +348,28 @@
 		///////////
 		
 		// note: 4x4 checkboard pattern scaled so that each square is 25 by 25 pixels.
-		var floorTexture = new THREE.ImageUtils.loadTexture( 'img/carpet.jpg' );
+		var floorTexture = new THREE.ImageUtils.loadTexture( 'images/checkerboard.jpg' );
 		floorTexture.wrapS = floorTexture.wrapT = THREE.RepeatWrapping; 
 		floorTexture.repeat.set( 10, 10 );
 		// DoubleSide: render texture on both sides of mesh
-		var floorMaterial = new THREE.MeshBasicMaterial( { map: floorTexture, side: THREE.DoubleSide } );
-		var floorGeometry = new THREE.PlaneGeometry(1000, 1000, 1, 1);
+		// var floorMaterial = new THREE.MeshBasicMaterial( { map: floorTexture, side: THREE.DoubleSide } );
+		var floorMaterial = new THREE.MeshLambertMaterial( { color: 0x5f5f5f, side: THREE.DoubleSide } );
+		var floorGeometry = new THREE.PlaneGeometry(1000, 800, 1, 1);
 		var floor = new THREE.Mesh(floorGeometry, floorMaterial);
 		floor.position.y = -0.5;
 		floor.rotation.x = Math.PI / 2;
+		floor.receiveShadow = true;
 		scene.add(floor);
+
+		///////////
+		// "WALLS" //
+		///////////
+
+		var wall1 = new Line(-500,0,400,-500,300,400);
+		var wall2 = new Line(-500,0,-400,-500,300,-400);
+		var wall3 = new Line(500,0,-400,500,300,-400);
+		var wall4 = new Line(500,0,400,500,300,400);
+		
 		
 		/////////
 		// SKY //
@@ -321,13 +408,15 @@
 	}
 	function render() 
 	{	
+		renderer.shadowMapEnables = true;
+		renderer.shadowMapType = THREE.PCFSoftShadowMap;
 		renderer.render( scene, camera );
 	}
 	function getSeatMaterial() {
-		return (new THREE.MeshLambertMaterial( { color: 0x333333, transparent: true, opacity: 0.75 } ));
+		return (new THREE.MeshLambertMaterial( { color: SEAT_COLOR, transparent: true, opacity: 0.9 } ));
 	}
 	function getTableMaterial() {
-		return (new THREE.MeshLambertMaterial( { color: 0x889922, transparent: true, opacity: 0.75 } ));
+		return (new THREE.MeshLambertMaterial( { color: TABLE_COLOR, transparent: true, opacity: 0.75 } ));
 	}
 	function solidColorArray(colorChoice)
 	{
@@ -340,48 +429,23 @@
 	function makeNewSeat(xpos,zpos) {
 		this[("seat"+seatCounter)] = new Seat(xpos,(SEATSIZE/2),zpos);
 	}
+	function sound(src) {
+	    this.sound = document.createElement("audio");
+	    this.sound.src = src;
+	    this.sound.setAttribute("preload", "auto");
+	    this.sound.setAttribute("controls", "none");
+	    this.sound.style.display = "none";
+	    document.body.appendChild(this.sound);
+	    this.play = function(){
+	        this.sound.play();
+	    }
+	    this.stop = function(){
+	        this.sound.pause();
+	    }
+	}
 	
-
-
-
-	// function newSeat(xpos, ypos, zpos) {
-	// 	var seatGeometry = new THREE.CubeGeometry(50, 50, 50, 1, 1, 1 );
-	// 	var seatMaterial = getSeatMaterial();
-	// 	var namestring = "seat"+seatCounter; 
-	// 	this[namestring] = new THREE.Mesh(seatGeometry, seatMaterial);
-	// 	this[namestring].position.set(xpos, ypos, zpos);
-	// 	scene.add(this[namestring]);
-	// 	seatCounter++;
-	// }
-
 		// order to add materials: x+,x-,y+,y-,z+,z-
 		
-			// var scene = new THREE.Scene();
-			// var camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
-
-			// var renderer = new THREE.WebGLRenderer();
-			// renderer.setSize( window.innerWidth, window.innerHeight );
-			// document.body.appendChild( renderer.domElement );
-
-			// var geometry = new THREE.BoxGeometry( 1, 1, 1 );
-			// var material = new THREE.MeshBasicMaterial( { color: 0x00ff00 } );
-			// var cube = new THREE.Mesh( geometry, material );
-			// scene.add( cube );
-
-			// camera.position.z = 5;
-
-			// var render = function () {
-			// 	requestAnimationFrame( render );
-
-			// 	cube.rotation.x += 0.01;
-			// 	cube.rotation.y += 0.01;
-
-			// 	renderer.render(scene, camera);
-			// };
-
-			// render();
-
-
 			// CUBE MATERIALS FACES //
 			// var cubeMaterialArray = [];
 			// order to add materials: x+,x-,y+,y-,z+,z-
