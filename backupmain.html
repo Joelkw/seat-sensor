@@ -1,15 +1,36 @@
-<!DOCTYPE html>
+<?php header('Content-Type: text/html; charset=utf-8'); ?>
 <html>
 	<head>
 		<meta charset=utf-8>
-		<title>My first Three.js app</title>
+		<title>Seating Visualization</title>
 		<style>
 			body { margin: 0; }
-			canvas { width: 100%; height: 100% }
+			canvas { width: 100%; height: 100%; position: absolute; z-index: -1;}
+			.header {
+				background-color: #046DFE;
+				position: absolute;
+				z-index: 9999;
+				width: 100%;
+				height: 50px;
+			}
+			.header-img {
+				height: 40px;
+				position: absolute;
+				z-index: 9999;
+				padding: 5px;
+
+			}
+			#ThreeJS {
+				position: relative;
+			}
 		</style>
 	</head>
 	<body>
+		
 		<div id="ThreeJS">
+			<div class="header" id="header">
+				<img src="img/header.png" class="header-img">
+			</div>
 		</div>
 
 	<script src="js/Three.js"></script>
@@ -19,6 +40,37 @@
 	<script src="js/THREEx.KeyboardState.js"></script>
 	<script src="js/THREEx.FullScreen.js"></script>
 	<script src="js/THREEx.WindowResize.js"></script>
+	<script type="text/javascript" src="//cdn.jsdelivr.net/particle-api-js/5/particle.min.js">
+	</script>
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.2/jquery.min.js"></script>
+
+<?php
+	// $fakeit = 1;
+	$deviceID_0 = "260028001851353338363036";
+	$access_token_0 = "1738bf6bb44645d246f0e5e967e621e211955183";
+	// FOR Eric's ideocolab device:
+	$deviceID_1 = "35002f000c51343334363138";
+	$access_token_1 = "9e61d1cf7b89fb5f3e54c6f76a2bdac46cf569eb";
+	
+	// $maps_api_key = "AIzaSyBeanUuN6p3vYf6Dv1FesPkG_mUjWX31ys";
+	// $maps_js_api_key = "AIzaSyA7Oo7PWYkuvBTIHASHwNNHC-odyGjGPtA";
+
+
+	// testing events
+	   // $curl = curl_init();
+	   // curl_setopt ($curl, CURLOPT_URL, "https://api.particle.io/v1/events?access_token=".$access_token."&eventPrefix=button");
+	   // curl_exec ($curl);
+	   // curl_close ($curl);
+
+	$url_0 = "https://api.particle.io/v1/devices/$deviceID_0/";
+	$formed_url_0 ='?access_token='.$access_token_0;
+	$variable_name_0 = "publicState";
+
+	$url_1 = "https://api.particle.io/v1/devices/$deviceID_1/";
+	$formed_url_1 ='?access_token='.$access_token_1;
+	$variable_name_1 = "publicState";
+	// $variable_numtrees = "numtrees";
+?>
 		<!--<script src="three.js"></script>-->
 		<script>
 
@@ -77,6 +129,10 @@
 
 		getStatus() {
 			return this.status;
+		}
+
+		setStatus(newStatus) {
+			this.status = newStatus;
 		}
 
 		change() {
@@ -187,7 +243,7 @@
 		renderer.shadowMapEnabled = true;
 		
 		// attach div element to variable to contain the renderer
-		container = document.getElementById( 'ThreeJS' );
+		container = document.getElementById( 'header' );
 		// alternatively: to create the div at runtime, use:
 		//   container = document.createElement( 'div' );
 		//    document.body.appendChild( container );
@@ -491,5 +547,53 @@
 
 
 		</script>
+			<script>
+			var priorStatus_0 = 0;
+			function checkSeat4() {
+				console.log("checkSeat4 was called");
+				var the_url = "<?=$url_0.$variable_name_0.$formed_url_0?>";
+
+		    $.ajax({
+		        url: the_url,
+		        type:'get',
+		        success: function(data){
+		            //alert(data);
+		            console.log(data);
+		            console.log(data.result);
+		            var sitStatus_0 = data.result;
+		            if (sitStatus_0 != priorStatus_0) {
+		            	seat4.change();
+		            	priorStatus_0 = sitStatus_0;
+		            	console.log("triggered!");
+		            }
+							}
+						});
+		  }
+			setInterval(checkSeat4,5000); 
+	</script>
+	<script>
+			var priorStatus_1 = 0;
+			function checkSeat8() {
+				console.log("checkSeat8 was called");
+				var the_url = "<?=$url_1.$variable_name_1.$formed_url_1?>";
+
+		    $.ajax({
+		        url: the_url,
+		        type:'get',
+		        success: function(data){
+		            //alert(data);
+		            console.log(data);
+		            console.log(data.result);
+		            var sitStatus_1 = data.result;
+		            if (sitStatus_1 != priorStatus_1) {
+		            	seat8.change();
+		            	priorStatus_1 = sitStatus_1;
+		            	console.log("triggered!");
+		            }
+							}
+						});
+		  }
+			setInterval(checkSeat8,4200); 
+	</script>
 	</body>
 </html>
